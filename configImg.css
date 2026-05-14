@@ -1,0 +1,215 @@
+::selection {
+  color: blue;
+  background: yellow;
+}
+
+p{
+    font-size: 15.5px!important;
+}
+
+.custom-badge {
+    background-color: #ff4b4b;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.st-key-convBMP .stButton button {
+    background-color: #124a97;
+    color: white;
+    border-radius: 10px;
+}
+
+.st-key-convBMP .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convBMP .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+	
+.st-key-convGIF .stButton button {
+    background-color: #27818a;
+    color: white;
+    border-radius: 10px;
+}
+
+.st-key-convGIF .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convGIF .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convICO .stButton button {
+    background-color: #86bc15;
+    color: white;
+    border-radius: 10px;
+}
+
+.st-key-convICO .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convICO .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convJPEG .stButton button {
+    background-color: #c89779;
+    color: white;
+    border-radius: 10px;
+}
+
+.st-key-convJPEG .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%);
+}
+
+.st-key-convJPEG .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convJPG .stButton button {
+    background-color: #DAA520;
+    color: white;
+    border-radius: 10px;
+}
+
+.st-key-convJPG .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convJPG .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convPNG .stButton button {
+    background-color: #d4d3d1;
+    color: black;
+    border-radius: 10px;
+}
+
+.st-key-convPNG .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convPNG .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convTIF .stButton button {
+    background-color: #b6e3a8;
+    color: black;
+    border-radius: 10px;
+}
+
+.st-key-convTIF .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convTIF .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convTIFF .stButton button {
+    background-color: #99c0d1;
+    color: black;
+    border-radius: 10px;
+}
+
+.st-key-convTIFF .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convTIFF .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convPDF .stButton button {
+    background-color: #FAF0E6;
+    color: black;
+    border-radius: 10px;
+}
+
+.st-key-convPDF .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convPDF .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-convPPM .stButton button {
+    background-color: #7FFFD4;
+    color: black;
+    border-radius: 10px;
+}
+
+.st-key-convPPM .stButton button:hover {
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+.st-key-convPPM .stButton button:disabled {
+	opacity: 0.2;
+	pointer-events: none;
+}
+
+.st-key-popInfo button {
+    background-color: #32FA41;
+    color: black;
+	border-radius: 10px;
+}
+
+div[data-testid="stPopover"] div[data-testid="popInfo"] {
+    width: 1000px !important;  /* Ajuste a largura aqui */
+    max-width: 1000px !important;
+}
+
+.st-key-popInfo button:hover {
+	background-color: #2A782F;
+	color: white;
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888; 
+	transform: translate(3%, -10%);
+}
+
+.st-key-popInfo button:disabled {
+	background-color: #32FA41;
+	color: black;
+	opacity: 0.2;
+	pointer-events: none;
+}
+
