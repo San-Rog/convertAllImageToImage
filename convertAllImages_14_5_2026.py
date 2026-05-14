@@ -255,8 +255,7 @@ class main():
                 self.colMens, self.colZip = st.columns([21, 3], width='stretch', vertical_alignment='center')
             self.callButton()
         else:
-            #scroll_to_element(self.keysWidget[0])
-            pass
+            scroll_to_element(self.keysWidget[0])
                     
     def defineButtons(self, mode):
         if mode == 0:
@@ -319,7 +318,7 @@ class main():
             textSp = 'Convertendo arquivo(s) para o formato {buttClick} com resolução de {self.resol}dpi...'
             with st.spinner(text=textSp, show_time=True, width='stretch'): 
                 self.messages.messageDown(dataFiles, self.colMens, self.colZip, buttClick)
-            #scroll_to_element(self.keysWidget[-1])
+            scroll_to_element(self.keysWidget[-1])
             
     def changeVal(self, widget):
         if widget == 0:
