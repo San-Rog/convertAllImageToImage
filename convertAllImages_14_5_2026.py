@@ -5,7 +5,6 @@ import zipfile
 from PIL import Image
 import streamlit as st
 import pandas as pd
-import pyautogui 
 from collections import Counter
 from PyPDF2 import PdfReader
 from fpdf import FPDF
@@ -177,7 +176,7 @@ class main():
     
     def homeScreen(self):
         self.sepHead = '#####......#####'
-        self.wdt, self.hgt = pyautogui.size()
+        self.wdt, self.hgt = ((1366, 768)
         self.oprExpr = 'opção'
         with st.container(border=4, vertical_alignment='top'):
             self.setKeys()
