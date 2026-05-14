@@ -176,7 +176,7 @@ class main():
     
     def homeScreen(self):
         self.sepHead = '#####......#####'
-        self.wdt, self.hgt = ((1366, 768)
+        self.wdt, self.hgt = (1366, 768)
         self.oprExpr = 'opção'
         with st.container(border=4, vertical_alignment='top'):
             self.setKeys()
