@@ -1,6 +1,5 @@
 pillow==10.3.0
 pandas==2.3.3
-pyautogui==0.9.53
 PyPDF2==3.0.1
 fpdf==1.7.2
 
