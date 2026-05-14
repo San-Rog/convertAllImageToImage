@@ -347,7 +347,7 @@ class main():
         layout='wide', 
         initial_sidebar_state=None, 
         menu_items=None)   
-        with open(r'C:\Users\ACER\Documents\css\configImg.css') as f:
+        with open('configImg.css') as f:
             css = f.read()
         st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
