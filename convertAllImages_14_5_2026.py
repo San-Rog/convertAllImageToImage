@@ -8,6 +8,7 @@ import pandas as pd
 from collections import Counter
 from PyPDF2 import PdfReader
 from fpdf import FPDF
+from streamlit_extras.scroll_to_element import *
 
 class messages():
     def __init__(self, *args):
