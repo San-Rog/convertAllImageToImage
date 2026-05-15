@@ -75,9 +75,7 @@ class operatFiles():
                         zipFile.writestr(imgNew, imgBytes.getvalue())
                         statusFileZip[keysnOk[0]].append(upNameExt)
                     except Exception as error:
-                        st.write(error)
                         statusFileZip[keysnOk[1]].append(upNameExt)
-        st.write(statusFileZip)
         return zipBuffer.getvalue()
         
     @st.cache_data
