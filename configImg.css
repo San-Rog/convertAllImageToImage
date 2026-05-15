@@ -193,11 +193,6 @@ p{
 	border-radius: 10px;
 }
 
-div[data-testid="stPopover"] div[data-testid="popInfo"] {
-    width: 1000px !important;  /* Ajuste a largura aqui */
-    max-width: 1000px !important;
-}
-
 .st-key-popInfo button:hover {
 	background-color: #2A782F;
 	color: white;
@@ -213,3 +208,16 @@ div[data-testid="stPopover"] div[data-testid="popInfo"] {
 	pointer-events: none;
 }
 
+div[data-testid="stExpander"] {
+    background-color: #F5F5F5;
+}
+
+div[data-testid="stExpander"] summary:hover {
+    background-color: #FFF68F; 
+    color: black; 
+}
+
+div[data-testid="stNumberInput"] input {
+    color: #FF0000;
+	text-align: center;
+}
