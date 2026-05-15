@@ -32,13 +32,13 @@ class messages():
             key='buttDown', 
             help='Grava o arquivo zipado na pasta Download.')
     
+    @st.dialog('⚠️ Arquivos repetidos') 
+    def choiceDown(_self, upLoads):
+        st.write(upLoads)
+        
     @st.dialog('⚠️ Falha no app❗')
     def mensError(self, str):
-        st.markdown(f'{str} Entre em contato com o administrador da ferramenta!')
- 
-    @st.dialog('⚠️ rerrrr') 
-    def choiceDown(self, str):
-        pass        
+        st.markdown(f'{str} Entre em contato com o administrador da ferramenta!') 
  
 class operatFiles():
     def __init__(self, *args):
@@ -226,7 +226,7 @@ class main():
             self.setKeys()
             colDown, colButton = st.columns([18, 25], width='stretch')
             self.objFiles = operatFiles(None)
-            self.messages = messages(None)
+            self.objMessages = messages(None)
             self.keysWidget = ['multExt', 'multFiles', 'contZip']
             with colDown:
                 helpDown = f'Escolha/selecione um ou mais destes {self.nExts} formatos de imagem: :blue[***{self.extsStr}***].\n'
@@ -238,7 +238,8 @@ class main():
                     self.options = st.multiselect(label=f'{self.labels[0]}', 
                                                   options=self.extsUni, key=self.keysWidget[0],  
                                                   width='stretch', label_visibility='collapsed', 
-                                                  placeholder='Tipo(s) de imagem escolhida(s)') 
+                                                  placeholder='Tipo(s) de imagem escolhida(s)', 
+                                                  on_change=self.changeVal, args=(2,)) 
                     if self.options == []:
                         st.session_state[self.keys[0]] = True
                         helpStr = 'Não há formatos de imagem selecionados para pesquisa.'
@@ -254,7 +255,8 @@ class main():
                                                     type=self.options, key=self.keysWidget[1],
                                                     max_upload_size=1024*20, 
                                                     width='stretch', label_visibility='collapsed',  
-                                                    disabled=st.session_state.fileDown)                    
+                                                    disabled=st.session_state.fileDown, 
+                                                    on_change=self.changeVal, args=(3,))                    
                     if self.upDowns == []:
                         st.session_state[self.keys[1]] = True
                         st.session_state[self.keys[2]] = self.valMin
@@ -296,6 +298,15 @@ class main():
                 self.colConfig, self.colInfo = st.columns([42, 6], width='stretch', 
                                                            vertical_alignment='bottom')
             self.configInfo()
+        self.infoGeneral()
+        if not st.session_state[self.keys[-2]]:
+            with st.container(border=False, key=self.keysWidget[-1]):
+                self.colMens, self.colZip = st.columns([21, 3], width='stretch', vertical_alignment='center')
+            self.callButton()
+        else:
+            scroll_to_element(self.keysWidget[0])
+                    
+    def infoGeneral(self):
         with st.expander(label='Informações gerais', icon='📌',  width='stretch', 
                          expanded=False):
             matrix = self.objAcess.makeTables(1, self.exts)
@@ -308,14 +319,8 @@ class main():
                         max_chars=100,
                     )
                 },
-                use_container_width=True, hide_index=True)
-        if not st.session_state[self.keys[-2]]:
-            with st.container(border=False, key=self.keysWidget[-1]):
-                self.colMens, self.colZip = st.columns([21, 3], width='stretch', vertical_alignment='center')
-            self.callButton()
-        else:
-            scroll_to_element(self.keysWidget[0])
-                    
+                width='stretch' , hide_index=True)
+               
     def defineButtons(self, mode):
         if mode == 0:
             self.listCol = self.colOne, self.colTwo, self.colThree, self.colFour, self.colFive
@@ -362,7 +367,7 @@ class main():
             colFileSel.markdown(txtFile)
             colResolSel.markdown(txtResol)
             colOptSel.markdown(txtOpt)
-        self.buttInfo = self.colInfo.popover(label='Info', key='popInfo', help='Clique para exibir ou ocultar detalhes da sessão de uso.', 
+        self.buttInfo = self.colInfo.popover(label='Info', key='popInfo', help='Clique para exibir ou ocultar detalhes dos arquivos.', 
                                              use_container_width=True, icon=self.symbols[-1], 
                                              disabled=st.session_state[self.keys[-1]])            
         with self.buttInfo:
@@ -376,7 +381,7 @@ class main():
             dataFiles = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol)  
             textSp = 'Convertendo arquivo(s) para o formato {buttClick} com resolução de {self.resol}dpi...'
             with st.spinner(text=textSp, show_time=True, width='stretch'): 
-                self.messages.messageDown(dataFiles, self.colMens, self.colZip, buttClick)
+                self.objMessages.messageDown(dataFiles, self.colMens, self.colZip, buttClick)
             scroll_to_element(self.keysWidget[-1])
             
     def changeVal(self, widget):
