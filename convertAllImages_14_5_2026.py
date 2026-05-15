@@ -380,6 +380,7 @@ class main():
             scroll_to_element(self.keysWidget[-1])
             
     def changeVal(self, widget):
+        st.session_state['clicked'] = None
         if widget == 0:
             st.session_state[self.keys[3]] = st.session_state[self.keys[2]]
         else:
