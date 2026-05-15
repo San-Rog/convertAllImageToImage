@@ -1,6 +1,7 @@
 import io
 import os
 import time
+import pymupdf 
 import zipfile
 from PIL import Image
 import streamlit as st
@@ -30,6 +31,14 @@ class messages():
             width='stretch', 
             key='buttDown', 
             help='Grava o arquivo zipado na pasta Download.')
+    
+    @st.dialog('⚠️ Falha no app❗')
+    def mensError(self, str):
+        st.markdown(f'{str} Entre em contato com o administrador da ferramenta!')
+ 
+    @st.dialog('⚠️ rerrrr') 
+    def choiceDown(self, str):
+        pass        
  
 class operatFiles():
     def __init__(self, *args):
@@ -53,28 +62,42 @@ class operatFiles():
         ext = args[2].lower()
         resol = args[3]
         zipBuffer = io.BytesIO()
-        failZip = {}
-        with zipfile.ZipFile(zipBuffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
-            for file, upLoads in fileUpLoads.items():
-                for upLoad in upLoads:
+        keysnOk = ['ok', 'nok']
+        statusFileZip = {keysnOk[0]: [], keysnOk[1]:[]}
+        for file, upLoads in fileUpLoads.items():
+            for upLoad in upLoads:
+                with zipfile.ZipFile(zipBuffer, 'a', zipfile.ZIP_DEFLATED) as zipFile:
+                    upNameExt = upLoad.name
+                    upName, upExt = os.path.splitext(upNameExt)
+                    upExt = upExt.lower().replace('.', '').strip()
                     try:
-                        upName, upExt = os.path.splitext(upLoad.name)
-                        img = Image.open(upLoad)
-                        imgBytes = io.BytesIO()
-                        if ext == 'tif':
-                            extConv = 'tiff'
-                        elif ext == 'jpg':
-                            extConv = 'jpeg'
-                        else:
-                            extConv = ext
-                        img.save(imgBytes, format=extConv, dpi=(resol, resol))
-                        imgNew = f'{upName}.{ext}'
-                        zip_file.writestr(imgNew, imgBytes.getvalue())
+                        imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName)
+                        zipFile.writestr(imgNew, imgBytes.getvalue())
+                        statusFileZip[keysnOk[0]].append(upNameExt)
                     except Exception as error:
-                        failZip.setdefault(file, [])
-                        failZip[file].append(upLoad)
+                        st.write(error)
+                        statusFileZip[keysnOk[1]].append(upNameExt)
+        st.write(statusFileZip)
         return zipBuffer.getvalue()
-                                
+        
+    @st.cache_data
+    def operatNoPdfToOther(_self, *args):
+        upLoad = args[0]
+        ext = args[1]
+        resol = args[2]
+        upName = args[3]
+        img = Image.open(upLoad)
+        imgBytes = io.BytesIO()
+        if ext == 'tif':
+            extConv = 'tiff'
+        elif ext == 'jpg':
+            extConv = 'jpeg'
+        else:
+            extConv = ext
+        img.save(imgBytes, format=extConv, dpi=(resol, resol))
+        imgNew = f'{upName}.{ext}'
+        return(imgNew, imgBytes)
+                                   
 class acessories():
     def __init__(self, *args):
         self.none = args[0]
@@ -111,7 +134,14 @@ class acessories():
         iconNeg = args[2]
         exprOpt = args[3]
         exprSel = args[4]
+        mode = args[5]
+        exts = args[6]
         nOpt = len(listOpt)
+        if mode == 0: 
+            if exts[3] in listOpt: 
+                nOpt += 1
+            if exts[-1] in listOpt:
+                nOpt += 1
         match nOpt:
             case 0:
                 txtInfo = f'{iconNeg} {exprOpt} {exprSel} ({nOpt})'
@@ -123,23 +153,39 @@ class acessories():
     
     @st.cache_data    
     def makeTables(_self, *args):
-        upLoads = args[0]
-        sepHead = args[1]
-        objFiles = operatFiles(None)
-        keys = ['nome', 'tipo', 'tamanho', 'quantidade', 'status']
-        heads = {key:[] for key in keys}
-        nameTypeSize = []
-        keysUp = list(upLoads.keys())        
-        for keyUp in keysUp:
-            keyUpSplit = keyUp.split(sepHead)
-            for s, spl in enumerate(keyUpSplit):
-                heads[keys[s]].append(spl) 
-            nRep = len(upLoads[keyUp])
-            heads[keys[s+1]].append(nRep)
-            if nRep > 1:
-                heads[keys[s+2]].append('com repetição')
-            else:
-                heads[keys[s+2]].append('sem repetição')
+        mode = args[0]
+        if mode == 0:
+            upLoads = args[1]
+            sepHead = args[2]
+            objFiles = operatFiles(None)
+            keys = ['nome', 'tipo', 'tamanho', 'quantidade', 'status']
+            heads = {key:[] for key in keys}
+            nameTypeSize = []
+            keysUp = list(upLoads.keys())        
+            for keyUp in keysUp:
+                keyUpSplit = keyUp.split(sepHead)
+                for s, spl in enumerate(keyUpSplit):
+                    heads[keys[s]].append(spl) 
+                nRep = len(upLoads[keyUp])
+                heads[keys[s+1]].append(nRep)
+                if nRep > 1:
+                    heads[keys[s+2]].append('com repetição')
+                else:
+                    heads[keys[s+2]].append('sem repetição')
+        else:
+            exts = args[1]
+            heads = {'formato': exts, 
+                     'informações': 
+                         ['https://en.wikipedia.org/wiki/BMP_file_format', 
+                          'https://pt.wikipedia.org/wiki/GIF', 
+                          'https://en.wikipedia.org/wiki/ICO_(file_format)', 
+                          'https://en.wikipedia.org/wiki/JPEG', 
+                          'https://pdfcandy.com/pt/blog/o-que-e-um-arquivo-jpg.html', 
+                          'https://pt.wikipedia.org/wiki/PDF', 
+                          'https://pt.wikipedia.org/wiki/PNG', 
+                          'https://en.wikipedia.org/?title=.ppm&redirect=no', 
+                          'https://www.quora.com/What-is-a-tif-file-for', 
+                          'https://pt.wikipedia.org/wiki/Tagged_Image_File_Format']}
         matrix = pd.DataFrame(heads, index=None)  
         return matrix
         
@@ -165,7 +211,7 @@ class main():
         self.objAcess = acessories(None)
         self.exts = ['BMP', 'GIF', 'ICO', 'JPEG', 'JPG', 'PDF', 'PNG', 
                      'PPM', 'TIF', 'TIFF']
-        self.extsUni = ['BMP', 'GIF', 'ICO', 'JPG', 'PDF', 'PNG', 'PPM', 'TIF']
+        self.extsUni = ['BMP', 'GIF', 'ICO', 'JPG', 'PNG', 'PPM', 'TIF']
         self.extsStr, self.nExts = self.objAcess.returnStr(self.extsUni)
         self.valMin, self.valMax, self.step = (70,1500, 1)
         self.icons = ['🏷️', '📚', '🛠️', '🎛️'] 
@@ -185,9 +231,12 @@ class main():
             self.messages = messages(None)
             self.keysWidget = ['multExt', 'multFiles', 'contZip']
             with colDown:
+                helpDown = f'Escolha/selecione um ou mais destes {self.nExts} formatos de imagem: :blue[***{self.extsStr}***].\n'
+                helpDown += f'O formato :blue[***{self.extsUni[3]}***] implica também :blue[***{self.exts[3]}***].'
+                helpDown += f'O formato :blue[***{self.extsUni[-1]}***] implica também :blue[***{self.exts[-1]}***].'
                 with st.container(border=None, vertical_alignment='center'):
                     st.markdown(self.labels[0], width='stretch', text_alignment='center', 
-                                help=f'Escolha/selecione um ou mais destes {self.nExts} formatos de imagem: :blue[***{self.extsStr}***].')
+                                help=helpDown)
                     self.options = st.multiselect(label=f'{self.labels[0]}', 
                                                   options=self.extsUni, key=self.keysWidget[0],  
                                                   width='stretch', label_visibility='collapsed', 
@@ -249,6 +298,19 @@ class main():
                 self.colConfig, self.colInfo = st.columns([42, 6], width='stretch', 
                                                            vertical_alignment='bottom')
             self.configInfo()
+        with st.expander(label='Informações gerais', icon='📌',  width='stretch', 
+                         expanded=False):
+            matrix = self.objAcess.makeTables(1, self.exts)
+            df = pd.DataFrame(matrix)
+            st.dataframe(df,
+                column_config={
+                    "informações": st.column_config.LinkColumn(
+                        "Link de Acesso",
+                        help="Clique para abrir o site",
+                        max_chars=100,
+                    )
+                },
+                use_container_width=True, hide_index=True)
         if not st.session_state[self.keys[-2]]:
             with st.container(border=False, key=self.keysWidget[-1]):
                 self.colMens, self.colZip = st.columns([21, 3], width='stretch', vertical_alignment='center')
@@ -288,8 +350,8 @@ class main():
     def configInfo(self):
         self.positive = '✔️'
         self.negative = '❌'
-        txtFormat = self.objAcess.returnInfo(self.options, self.positive, self.negative, 'formato', 'escolhido')
-        txtFile = f'{self.objAcess.returnInfo(self.upDowns, self.positive, self.negative, 'arquivo', 'selecionado')}'
+        txtFormat = self.objAcess.returnInfo(self.options, self.positive, self.negative, 'formato', 'escolhido', 0, self.extsUni)
+        txtFile = f'{self.objAcess.returnInfo(self.upDowns, self.positive, self.negative, 'arquivo', 'selecionado', 1, self.extsUni)}'
         txtResol = f'{self.positive} resolução ({str(st.session_state[self.keys[2]])}dpi)'
         if st.session_state['clicked'] is None:
             txtOpt = f'{self.negative} nenhuma opção clicada'
@@ -306,7 +368,7 @@ class main():
                                              use_container_width=True, icon=self.symbols[-1], 
                                              disabled=st.session_state[self.keys[-1]])            
         with self.buttInfo:
-            matrix = self.objAcess.makeTables(self.allUpLoads, self.sepHead)
+            matrix = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead)
             st.dataframe(matrix, width=int(self.wdt*0.95), height="auto", hide_index=True)
     
     def callButton(self):
