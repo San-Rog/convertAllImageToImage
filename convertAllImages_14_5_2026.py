@@ -19,26 +19,49 @@ class messages():
         colMens = args[1]
         colDown = args[2]
         ext = args[3].lower()
+        partial = args[4]
+        keyDown = args[5]
+        resol = args[6]
         placeMens = colMens.empty()
         placeDown = colDown.empty()
-        colMens.success(f'Sucesso na conversão para {ext}', icon='☑️',  width='stretch')
+        fileResult = f'imagens_convertidas_{resol}_dpi_{ext}.zip'
+        exprSucess = (f'Sucesso {partial} na conversão para o formato :blue[**{ext}**]. ' 
+                      f'Faça download e acesse o arquivo :blue[**{fileResult}**].')
+        colMens.success(exprSucess, icon='☑️',  width='stretch')
         optDown = colDown.download_button(
             label='Download',
             data=dataFiles,
-            file_name='imagens_convertidas.zip',
+            file_name=fileResult,
             mime='application/zip', 
             icon=':material/download:', 
             width='stretch', 
-            key='buttDown', 
+            key=keyDown, 
             help='Grava o arquivo zipado na pasta Download.')
     
-    @st.dialog('⚠️ Arquivos repetidos') 
-    def choiceDown(_self, upLoads):
-        st.write(upLoads)
+    @st.dialog(title='Problema na conversão❗', width='medium', icon='🚧')
+    def mensFormat(self, *args):
+        oks = args[0]
+        qOks = len(oks)
+        noks = args[1]
+        qNoks = len(noks)
+        ext = args[2]
+        key = args[3]
+        nTotal = qOks + qNoks 
+        textOk = f'📋 Resultado da tentativa de converter :blue[**{nTotal}**] arquivo(s) para o formato :blue[**{ext}**].<br><br>' 
+        if qOks > 0:
+            textOk +=  f':blue[**{qOks}**] arquivo(s) bem-sucedido(s):<br>'
+            textOk += ' '.join([f'<br>ⵌ{str(w+1)} 📂{oks[w]}' for w in range(qOks)])
+        else:
+            textOk += '🚫 Não houve conversão bem-sucedida!<br>'
+        textOk += f'<br>🔖 :blue[**{qNoks}**] arquivo(s) com problema:'
+        if qNoks > 0:
+            textOk += ' '.join([f'<br>ⵌ{str(w+1)} 📂{noks[w]}' for w in range(qNoks)])
+        st.markdown(textOk, unsafe_allow_html=True)
+        scroll_to_element(key)
         
-    @st.dialog('⚠️ Falha no app❗')
-    def mensError(self, str):
-        st.markdown(f'{str} Entre em contato com o administrador da ferramenta!') 
+    @st.dialog(title='Falha no aplicativo❗', width='medium', icon='🆘')
+    def mensError(self, fail):
+        st.markdown(f'Ocorreu o seguinte erro: {fail}. Contate o administador da ferramenta.')
  
 class operatFiles():
     def __init__(self, *args):
@@ -69,6 +92,7 @@ class operatFiles():
                 with zipfile.ZipFile(zipBuffer, 'a', zipfile.ZIP_DEFLATED) as zipFile:
                     upNameExt = upLoad.name
                     upName, upExt = os.path.splitext(upNameExt)
+                    upName = f'{upName}_{resol}_dpi' 
                     upExt = upExt.lower().replace('.', '').strip()
                     try:
                         imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName)
@@ -76,7 +100,7 @@ class operatFiles():
                         statusFileZip[keysnOk[0]].append(upNameExt)
                     except Exception as error:
                         statusFileZip[keysnOk[1]].append(upNameExt)
-        return zipBuffer.getvalue()
+        return(zipBuffer.getvalue(), statusFileZip)
         
     @st.cache_data
     def operatNoPdfToOther(_self, *args):
@@ -184,14 +208,18 @@ class acessories():
                           'https://en.wikipedia.org/?title=.ppm&redirect=no', 
                           'https://www.quora.com/What-is-a-tif-file-for', 
                           'https://pt.wikipedia.org/wiki/Tagged_Image_File_Format']}
-        matrix = pd.DataFrame(heads, index=None)  
+        matrix = pd.DataFrame(heads, index=None) 
         return matrix
         
 class main():
     def __init__(self):
-        self.setKeys()
-        self.setPage()
-        self.homeScreen()
+        self.objMessages = messages(None)
+        try:
+            self.setKeys()
+            self.setPage()
+            self.homeScreen()
+        except Exception as fail:
+            self.objMessages.mensError(fail)            
         
     def setKeys(self):
         self.keys = ['fileDown', 'statusButt', 'valSlider', 'valInput', 'numFiles', 
@@ -226,7 +254,6 @@ class main():
             self.setKeys()
             colDown, colButton = st.columns([18, 25], width='stretch')
             self.objFiles = operatFiles(None)
-            self.objMessages = messages(None)
             self.keysWidget = ['multExt', 'multFiles', 'contZip']
             with colDown:
                 helpDown = f'Escolha/selecione um ou mais destes {self.nExts} formatos de imagem: :blue[***{self.extsStr}***].\n'
@@ -378,11 +405,19 @@ class main():
         buttClick = st.session_state['clicked']
         if buttClick is not None:
             buttClick = buttClick.replace(self.oprExpr, '').strip()
-            dataFiles = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol)  
             textSp = 'Convertendo arquivo(s) para o formato {buttClick} com resolução de {self.resol}dpi...'
-            with st.spinner(text=textSp, show_time=True, width='stretch'): 
-                self.objMessages.messageDown(dataFiles, self.colMens, self.colZip, buttClick)
-            scroll_to_element(self.keysWidget[-1])
+            dataFiles, fileFails = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol)  
+            keyF = list(fileFails.keys()) 
+            oks = fileFails[keyF[0]]
+            noks = fileFails[keyF[1]]
+            partial = ''
+            if len(noks) > 0:
+                partial = 'parcial'
+                self.objMessages.mensFormat(oks, noks, buttClick, self.keysWidget[0])
+            if len(oks) > 0:
+                self.objMessages.messageDown(dataFiles, self.colMens, self.colZip, 
+                                             buttClick, partial, self.keys[-2], self.resol)
+                scroll_to_element(self.keysWidget[-1])
             
     def changeVal(self, widget):
         st.session_state['clicked'] = None
