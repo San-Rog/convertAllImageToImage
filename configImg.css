@@ -213,7 +213,7 @@ div[data-testid="stExpander"] {
 }
 
 div[data-testid="stExpander"] summary:hover {
-    background-color: #FFF68F; 
+    background-color: #d6f6f8; 
     color: black; 
 }
 
@@ -221,3 +221,19 @@ div[data-testid="stNumberInput"] input {
     color: #FF0000;
 	text-align: center;
 }
+
+.st-key-buttDown button {
+    background-color: #FFEA99;
+    color: black;
+	height: 50px;
+	border-radius: 10px;
+}
+
+.st-key-buttDown button:hover {
+	background-color: #E0BC00;
+	color: white;
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888; 
+	transform: translate(1%, -8%);
+}
+
