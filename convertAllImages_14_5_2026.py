@@ -180,7 +180,7 @@ class acessories():
             upLoads = args[1]
             sepHead = args[2]
             objFiles = operatFiles(None)
-            keys = ['nome', 'tipo', 'tamanho', 'quantidade', 'status']
+            keys = ['nome', 'tipo', 'tamanho básico', 'tamanho convertido', 'quantidade', 'status']
             heads = {key:[] for key in keys}
             nameTypeSize = []
             keysUp = list(upLoads.keys())        
@@ -188,12 +188,14 @@ class acessories():
                 keyUpSplit = keyUp.split(sepHead)
                 for s, spl in enumerate(keyUpSplit):
                     heads[keys[s]].append(spl) 
+                sizeMod = _self.convertSize(int(spl))
+                heads[keys[s+1]].append(sizeMod)
                 nRep = len(upLoads[keyUp])
-                heads[keys[s+1]].append(nRep)
+                heads[keys[s+2]].append(nRep)
                 if nRep > 1:
-                    heads[keys[s+2]].append('com repetição')
+                    heads[keys[s+3]].append('com repetição')
                 else:
-                    heads[keys[s+2]].append('sem repetição')
+                    heads[keys[s+3]].append('sem repetição')
         else:
             exts = args[1]
             heads = {'formato': exts, 
@@ -207,10 +209,32 @@ class acessories():
                           'https://pt.wikipedia.org/wiki/PNG', 
                           'https://en.wikipedia.org/?title=.ppm&redirect=no', 
                           'https://www.quora.com/What-is-a-tif-file-for', 
-                          'https://pt.wikipedia.org/wiki/Tagged_Image_File_Format']}
-        matrix = pd.DataFrame(heads, index=None) 
-        return matrix
-        
+                          'https://pt.wikipedia.org/wiki/Tagged_Image_File_Format'],
+                    'seleção': 
+                        ['✅' for w in range(10)], 
+                    'conversão': 
+                        ['✅' for w in range(10)]
+                    }
+            keys = list(heads.keys())
+            heads[keys[-2]][5] = '❌'
+        matrix = pd.DataFrame(heads, index=None)
+        return(matrix, keys)
+    
+    @st.cache_data     
+    def convertSize(_self, tam):
+        var = ['KB', 'MB', 'GB', 'TB', 'PB']
+        size = 1024
+        rest = tam
+        for v, vr in enumerate(var):
+            x = divmod(tam, size)
+            tam = x[0]
+            rest = x[1]
+            if x[0] < 1000:
+                break
+        valFloat = f'{float(tam + rest/size):.3f}'
+        valStr = f'{valFloat.replace('.', ',')}{vr}'
+        return valStr
+
 class main():
     def __init__(self):
         self.objMessages = messages(None)
@@ -226,9 +250,9 @@ class main():
                      'numExt', 'buttDown', 'popInfo']
         for k, key in enumerate(self.keys): 
             if key not in st.session_state:
-                if k <= 1 or key == self.keys[-1]:
+                if k <= 1:
                     st.session_state[key] = True
-                elif key == self.keys[-2]:
+                elif any([key == self.keys[-2], key == self.keys[-1]]):
                     st.session_state[key] = False
                 else:
                     st.session_state[key] = 0
@@ -289,11 +313,9 @@ class main():
                         st.session_state[self.keys[2]] = self.valMin
                         st.session_state[self.keys[3]] = self.valMin
                         st.session_state['clicked'] = None
-                        st.session_state[self.keys[-1]] = True
                         self.allUpLoads = {}
                     else:
                         st.session_state[self.keys[1]] = False 
-                        st.session_state[self.keys[-1]] = False
                         self.allUpLoads = self.objFiles.operatBasic(self.upDowns, self.sepHead)
                     confUp = self.objAcess.returnUpload()
                     st.markdown(confUp, unsafe_allow_html=True)
@@ -325,28 +347,12 @@ class main():
                 self.colConfig, self.colInfo = st.columns([42, 6], width='stretch', 
                                                            vertical_alignment='bottom')
             self.configInfo()
-        self.infoGeneral()
         if not st.session_state[self.keys[-2]]:
             with st.container(border=False, key=self.keysWidget[-1]):
                 self.colMens, self.colZip = st.columns([21, 3], width='stretch', vertical_alignment='center')
             self.callButton()
         else:
             scroll_to_element(self.keysWidget[0])
-                    
-    def infoGeneral(self):
-        with st.expander(label='Informações gerais', icon='📌',  width='stretch', 
-                         expanded=False):
-            matrix = self.objAcess.makeTables(1, self.exts)
-            df = pd.DataFrame(matrix)
-            st.dataframe(df,
-                column_config={
-                    "informações": st.column_config.LinkColumn(
-                        "Link de Acesso",
-                        help="Clique para abrir o site",
-                        max_chars=100,
-                    )
-                },
-                width='stretch' , hide_index=True)
                
     def defineButtons(self, mode):
         if mode == 0:
@@ -394,12 +400,44 @@ class main():
             colFileSel.markdown(txtFile)
             colResolSel.markdown(txtResol)
             colOptSel.markdown(txtOpt)
-        self.buttInfo = self.colInfo.popover(label='Info', key='popInfo', help='Clique para exibir ou ocultar detalhes dos arquivos.', 
+            helpInfo = 'Clique para exibir ou ocultar detalhes das opções de formato e, \n'  
+            helpInfo += 'quando houver, dos arquivos selecionados.'
+        self.buttInfo = self.colInfo.popover(label='Info', key=self.keys[-1], help=helpInfo, 
                                              use_container_width=True, icon=self.symbols[-1], 
                                              disabled=st.session_state[self.keys[-1]])            
         with self.buttInfo:
-            matrix = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead)
-            st.dataframe(matrix, width=int(self.wdt*0.95), height="auto", hide_index=True)
+            matrix, keys = self.objAcess.makeTables(1, self.exts)
+            st.markdown('📱 :red[**Detalhes sobre os formatos**]', width='stretch', text_alignment='center', 
+                        help='Exibe links e detalhes sobre os formatos.')
+            df = pd.DataFrame(matrix)
+            st.dataframe(df,
+                column_config={
+                    keys[1]: st.column_config.LinkColumn(
+                                    label="link de acesso", 
+                                    help="Clique para abrir o site com esclarecimentos sobre o formato.",
+                                    )
+                },
+                width='stretch' , hide_index=True)
+            if len(self.allUpLoads) > 0:
+                st.markdown('💻 :red[**Detalhes sobre a seleção de arquivos**]', width='stretch', text_alignment='center', 
+                            help='Exibe detalhes dos arquivos selecionados.')
+                matrix, keys = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead)
+                df = pd.DataFrame(matrix)
+                st.dataframe(df, 
+                    column_config={
+                        keys[2]:st.column_config.NumberColumn(
+                                label='tamanho (bytes)',
+                                format='localized', 
+                                alignment='left'
+                                ), 
+                        keys[4]:st.column_config.NumberColumn(
+                                alignment='left'
+                                )
+                    },             
+                    width='stretch' , hide_index=True)
+            else:
+               st.markdown('🚫 :yellow[**Não há arquivos selecionados.**]', width='stretch', text_alignment='center') 
+            st.space('xxsmall')
     
     def callButton(self):
         buttClick = st.session_state['clicked']
