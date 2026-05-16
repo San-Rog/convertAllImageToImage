@@ -208,6 +208,12 @@ p{
 	pointer-events: none;
 }
 
+div[data-testid="stPopoverBody"] {
+        width: 1000px !important;      
+        max-width: 1000px !important;  /* Impede que fique maior que isso */
+		height: 550px !important; 
+}
+
 div[data-testid="stExpander"] {
     background-color: #F5F5F5;
 }
@@ -220,6 +226,15 @@ div[data-testid="stExpander"] summary:hover {
 div[data-testid="stNumberInput"] input {
     color: #FF0000;
 	text-align: center;
+}
+
+[data-testid="stNumberInput"] input:hover {
+    background-color: #c1f1fb; 
+	border-color: #cccccc;
+}
+
+[data-testid="stNumberInput"] input:disabled {
+	pointer-events: none;
 }
 
 .st-key-buttDown button {
@@ -237,3 +252,25 @@ div[data-testid="stNumberInput"] input {
 	transform: translate(1%, -8%);
 }
 
+div[data-baseweb="select"] > div:hover{
+    background-color: #c1f1fb;
+    border-color: #cccccc;
+}
+
+div[data-testid="stFileUploader"] section button {
+    background-color: #1E90FF;
+    color: white;
+    border-radius: 10px;
+}
+    
+div[data-testid="stFileUploader"] section button:hover {
+	background-color: #124a97;
+	color: white;
+	border-radius: 10px;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -10%); 
+}
+
+div[data-testid="stFileUploader"] section button:disabled {
+	pointer-events: none;
+}
