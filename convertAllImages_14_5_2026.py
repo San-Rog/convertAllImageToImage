@@ -48,11 +48,11 @@ class messages():
         nTotal = qOks + qNoks 
         textOk = f'📋 Resultado da tentativa de converter :blue[**{nTotal}**] arquivo(s) para o formato :blue[**{ext}**].<br>' 
         if qOks > 0:
-            textOk +=  f':blue[**{qOks}**] arquivo(s) bem-sucedido(s):<br>'
+            textOk +=  f':blue[**{qOks}**] arquivo(s) bem-sucedido(s):'
             textOk += ' '.join([f'<br>ⵌ{str(w+1)} 📂{oks[w]}' for w in range(qOks)])
         else:
             textOk += '🚫 Não houve conversão bem-sucedida!<br>'
-        textOk += f'<br>🔖 :blue[**{qNoks}**] arquivo(s) com problema:'
+        textOk += f'<br><br>🔖 :blue[**{qNoks}**] arquivo(s) com problema:'
         if qNoks > 0:
             textOk += ' '.join([f'<br>ⵌ{str(w+1)} 📂{noks[w]}' for w in range(qNoks)])
         st.markdown(textOk, unsafe_allow_html=True)
@@ -135,6 +135,8 @@ class operatFiles():
                             statusFileZip[keysnOk[0]].append(upNameExt)
                         except:
                             statusFileZip[keysnOk[1]].append(upNameExt)
+        statusFileZip[keysnOk[0]] = list(set(statusFileZip[keysnOk[0]]))
+        statusFileZip[keysnOk[1]] = list(set(statusFileZip[keysnOk[1]]))
         return(zipBuffer.getvalue(), statusFileZip)
         
     @st.cache_data
@@ -301,7 +303,7 @@ class acessories():
                         ['✅' for w in range(10)]
                     }
             keys = list(heads.keys())
-            heads[keys[-1]][5] += ' (resolução inalterável)'
+            heads[keys[-1]][5] += ' (resolução imutável)'
         matrix = pd.DataFrame(heads, index=None)
         return(matrix, keys)
     
@@ -346,7 +348,7 @@ class main():
                      'PPM', 'TIF', 'TIFF']
         self.extsUni = ['BMP', 'GIF', 'ICO', 'JPG', 'PDF', 'PNG', 'PPM', 'TIF']
         self.extsStr, self.nExts = self.objAcess.returnStr(self.extsUni)
-        self.valMin, self.valMax, self.step = (70,1500, 1)
+        self.valMin, self.valMax, self.step = (72,1500, 1)
         self.icons = ['🏷️', '📚', '🛠️', '🎛️'] 
         self.labels = [f'{self.icons[0]} Formatos de imagem para pesquisa e seleção', 
                        f'{self.icons[1]} Lista de arquivos de imagem selecionados', 
