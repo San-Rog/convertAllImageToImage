@@ -195,9 +195,9 @@ class operatFiles():
             imgNew = f'{upName}_pg_{i + 1}.{ext}'
             try:
                 pix = page.get_pixmap()
-                img = Image.open(io.BytesIO(pix.tobytes(ext)))
+                img = Image.open(io.BytesIO(pix.tobytes(extConv)))
                 img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format=ext, dpi=(resol, resol))
+                img.save(img_byte_arr, format=extConv, dpi=(resol, resol))
                 imgBytes = img_byte_arr.getvalue()
                 imgFileBytes.append([imgNew, imgBytes])
             except:
