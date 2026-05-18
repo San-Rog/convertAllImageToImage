@@ -301,7 +301,7 @@ class acessories():
                         ['✅' for w in range(10)]
                     }
             keys = list(heads.keys())
-            heads[keys[-2]][5] = '❌'
+            heads[keys[-1]][5] += ' (resolução inalterável)'
         matrix = pd.DataFrame(heads, index=None)
         return(matrix, keys)
     
