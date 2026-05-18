@@ -7,7 +7,7 @@ from PIL import Image
 import streamlit as st
 import pandas as pd
 from collections import Counter
-from PyPDF2 import PdfReader
+from PyPDF2 import PdfReader, PdfWriter
 from streamlit_extras.scroll_to_element import *
 
 class messages():
@@ -21,10 +21,9 @@ class messages():
         ext = args[3].lower()
         partial = args[4]
         keyDown = args[5]
-        resol = args[6]
         placeMens = colMens.empty()
         placeDown = colDown.empty()
-        fileResult = f'imagens_convertidas_{resol}_dpi_{ext}.zip'
+        fileResult = f'imagens_convertidas_para_{ext}.zip'
         exprSucess = (f'Sucesso {partial} na conversão para o formato :blue[**{ext}**]. ' 
                       f'Faça download e acesse o arquivo :blue[**{fileResult}**].')
         colMens.success(exprSucess, icon='☑️',  width='stretch')
@@ -47,7 +46,7 @@ class messages():
         ext = args[2]
         key = args[3]
         nTotal = qOks + qNoks 
-        textOk = f'📋 Resultado da tentativa de converter :blue[**{nTotal}**] arquivo(s) para o formato :blue[**{ext}**].<br><br>' 
+        textOk = f'📋 Resultado da tentativa de converter :blue[**{nTotal}**] arquivo(s) para o formato :blue[**{ext}**].<br>' 
         if qOks > 0:
             textOk +=  f':blue[**{qOks}**] arquivo(s) bem-sucedido(s):<br>'
             textOk += ' '.join([f'<br>ⵌ{str(w+1)} 📂{oks[w]}' for w in range(qOks)])
@@ -72,11 +71,16 @@ class operatFiles():
         upLoads = args[0]
         sepHead = args[1]
         dictUpLoads = {}
+        nYes = 0
         for upLoad in upLoads:
             keyLoad = f'{upLoad.name}{sepHead}{upLoad.type}{sepHead}{upLoad.size}'
+            if keyLoad in dictUpLoads:
+               nYes += 1
             dictUpLoads.setdefault(keyLoad, [])
             dictUpLoads[keyLoad].append(upLoad)
-        return dictUpLoads
+        nAll = len(upLoads)
+        nNot = nAll - nYes
+        return(nAll, nYes, dictUpLoads)
         
     @st.cache_data
     def operatOthertoOther(_self, *args):
@@ -84,6 +88,7 @@ class operatFiles():
         sepHead = args[1]
         ext = args[2].lower()
         resol = args[3]
+        extsUni = args[4]
         zipBuffer = io.BytesIO()
         keysnOk = ['ok', 'nok']
         statusFileZip = {keysnOk[0]: [], keysnOk[1]:[]}
@@ -92,14 +97,44 @@ class operatFiles():
                 with zipfile.ZipFile(zipBuffer, 'a', zipfile.ZIP_DEFLATED) as zipFile:
                     upNameExt = upLoad.name
                     upName, upExt = os.path.splitext(upNameExt)
-                    upName = f'{upName}_{resol}_dpi' 
                     upExt = upExt.lower().replace('.', '').strip()
-                    try:
-                        imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName)
-                        zipFile.writestr(imgNew, imgBytes.getvalue())
-                        statusFileZip[keysnOk[0]].append(upNameExt)
-                    except Exception as error:
-                        statusFileZip[keysnOk[1]].append(upNameExt)
+                    upName = f'{upName}_{upExt}_to_{ext}_{resol}_dpi'
+                    extPdf = extsUni[4].lower()
+                    if upExt == extPdf:
+                        if ext == extPdf:
+                            try:
+                                upName = f'{upName}_{upExt}_to_{ext}'
+                                imgFileBytes = _self.operatPdfToPdf(upLoad, ext, upName)
+                                for imgFile in imgFileBytes:
+                                    imgNew = imgFile[0]
+                                    imgBytes = imgFile[1]
+                                    if imgBytes is not None:
+                                        zipFile.writestr(imgNew, imgBytes)
+                                        statusFileZip[keysnOk[0]].append(upNameExt)
+                                    else:
+                                        statusFileZip[keysnOk[1]].append(upNameExt)
+                            except:
+                                statusFileZip[keysnOk[1]].append(upNameExt)
+                        if ext != extPdf:
+                            try:
+                                imgFileBytes = _self.operatPdfToOther(upLoad, ext, upName, resol)
+                                for imgFile in imgFileBytes:
+                                    imgNew = imgFile[0]
+                                    imgBytes = imgFile[1]
+                                    if imgBytes is not None:
+                                        zipFile.writestr(imgNew, imgBytes)
+                                        statusFileZip[keysnOk[0]].append(upNameExt)
+                                    else:
+                                        statusFileZip[keysnOk[1]].append(upNameExt)
+                            except:
+                                statusFileZip[keysnOk[1]].append(upNameExt)
+                    else:
+                        try:
+                            imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName)
+                            zipFile.writestr(imgNew, imgBytes.getvalue())
+                            statusFileZip[keysnOk[0]].append(upNameExt)
+                        except:
+                            statusFileZip[keysnOk[1]].append(upNameExt)
         return(zipBuffer.getvalue(), statusFileZip)
         
     @st.cache_data
@@ -119,6 +154,56 @@ class operatFiles():
         img.save(imgBytes, format=extConv, dpi=(resol, resol))
         imgNew = f'{upName}.{ext}'
         return(imgNew, imgBytes)
+        
+    @st.cache_data
+    def operatPdfToPdf(_self, *args):
+        upLoad = args[0]
+        ext = args[1]
+        upName = args[2]
+        pdfReader = PdfReader(upLoad)
+        allPages = len(pdfReader.pages)
+        pdfWriter = PdfWriter()
+        imgFileBytes = []
+        for numPg in range(allPages):
+            imgNew = f'{upName}_pg_{numPg + 1}.{ext}'
+            try:
+                pdfWriter.add_page(pdfReader.pages[numPg - 1])
+                output_pdf = io.BytesIO()
+                pdfWriter.write(output_pdf)
+                imgBytes=output_pdf.getvalue()
+                imgFileBytes.append([imgNew, imgBytes])
+            except:
+                imgFileBytes.append([imgNew, None])
+        return imgFileBytes
+        
+    @st.cache_data
+    def operatPdfToOther(_self, *args):
+        upLoad = args[0]
+        ext = args[1]
+        upName = args[2]
+        resol = args[3]
+        pdfBytes = upLoad.read()
+        doc = pymupdf.open(stream=pdfBytes, filetype="pdf")
+        imgFileBytes = []
+        if ext == 'tif':
+            extConv = 'tiff'
+        elif ext == 'jpg':
+            extConv = 'jpeg'
+        else:
+            extConv = ext
+        for i, page in enumerate(doc):
+            imgNew = f'{upName}_pg_{i + 1}.{ext}'
+            try:
+                pix = page.get_pixmap()
+                img = Image.open(io.BytesIO(pix.tobytes(ext)))
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format=ext, dpi=(resol, resol))
+                imgBytes = img_byte_arr.getvalue()
+                imgFileBytes.append([imgNew, imgBytes])
+            except:
+                imgFileBytes.append([imgNew, None])
+        doc.close()
+        return imgFileBytes
                                    
 class acessories():
     def __init__(self, *args):
@@ -256,12 +341,10 @@ class main():
                     st.session_state[key] = False
                 else:
                     st.session_state[key] = 0
-        if 'buttDown' not in st.session_state:
-            st.session_state['buttDown'] = False
         self.objAcess = acessories(None)
         self.exts = ['BMP', 'GIF', 'ICO', 'JPEG', 'JPG', 'PDF', 'PNG', 
                      'PPM', 'TIF', 'TIFF']
-        self.extsUni = ['BMP', 'GIF', 'ICO', 'JPG', 'PNG', 'PPM', 'TIF']
+        self.extsUni = ['BMP', 'GIF', 'ICO', 'JPG', 'PDF', 'PNG', 'PPM', 'TIF']
         self.extsStr, self.nExts = self.objAcess.returnStr(self.extsUni)
         self.valMin, self.valMax, self.step = (70,1500, 1)
         self.icons = ['🏷️', '📚', '🛠️', '🎛️'] 
@@ -295,6 +378,9 @@ class main():
                         st.session_state[self.keys[0]] = True
                         helpStr = 'Não há formatos de imagem selecionados para pesquisa.'
                     else:
+                        if self.options == [self.exts[5]]: 
+                            st.session_state[self.keys[2]] = self.valMin
+                            st.session_state[self.keys[3]] = self.valMin
                         st.session_state[self.keys[0]] = False 
                         self.optStr, self.nOpt = self.objAcess.returnStr(self.options)
                         helpStr = (f'Selecione ou arraste arquivos com qualquer um deste(s) '
@@ -314,16 +400,25 @@ class main():
                         st.session_state[self.keys[3]] = self.valMin
                         st.session_state['clicked'] = None
                         self.allUpLoads = {}
+                        self.nAll = 0 
+                        self.nRep = 0
                     else:
                         st.session_state[self.keys[1]] = False 
-                        self.allUpLoads = self.objFiles.operatBasic(self.upDowns, self.sepHead)
+                        self.nAll, self.nRep, self.allUpLoads = self.objFiles.operatBasic(self.upDowns, self.sepHead)
                     confUp = self.objAcess.returnUpload()
                     st.markdown(confUp, unsafe_allow_html=True)
             with colButton:
+                if self.options == [self.exts[5]]:
+                    cpl = f'Sendo exclusivo o formato {self.exts[5]}, a resolução, mesmo alterada, voltará ao mínimo e não será aplicada.'
+                elif self.exts[5] in self.options:
+                    cpl = f'A resolução não valerá para o formato {self.exts[5]}.'
+                else:
+                    cpl = ''
                 st.markdown(self.labels[2], width='stretch', text_alignment='center', 
                             help='Deslize o cursor para a direita ➡️ (aumento) e para a esquerda ⬅️ (diminuição).\n'
                                  'Para entrada numérica, digite a resolução (apertando "enter" depois) ou aumente (➕)/ diminua (➖) \n'
-                                 'o valor desejado. O controle deslizante e o controle numérico se afetam reciprocamente.')
+                                 f'o valor desejado. O controle deslizante e o controle numérico se afetam reciprocamente. {cpl}')
+                                
                 colSlider, colResol = st.columns(spec=[13, 3.7], width='stretch', vertical_alignment='center')
                 self.slider = colSlider.slider(label=self.labels[2], min_value=self.valMin, max_value=self.valMax,
                                                step=self.step, key=self.keys[2], label_visibility='collapsed', 
@@ -444,7 +539,7 @@ class main():
         if buttClick is not None:
             buttClick = buttClick.replace(self.oprExpr, '').strip()
             textSp = 'Convertendo arquivo(s) para o formato {buttClick} com resolução de {self.resol}dpi...'
-            dataFiles, fileFails = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol)  
+            dataFiles, fileFails = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol, self.extsUni)  
             keyF = list(fileFails.keys()) 
             oks = fileFails[keyF[0]]
             noks = fileFails[keyF[1]]
@@ -454,7 +549,7 @@ class main():
                 self.objMessages.mensFormat(oks, noks, buttClick, self.keysWidget[0])
             if len(oks) > 0:
                 self.objMessages.messageDown(dataFiles, self.colMens, self.colZip, 
-                                             buttClick, partial, self.keys[-2], self.resol)
+                                             buttClick, partial, self.keys[-2])
                 scroll_to_element(self.keysWidget[-1])
             
     def changeVal(self, widget):
