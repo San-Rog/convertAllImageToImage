@@ -70,9 +70,15 @@ class operatFiles():
     def operatBasic(_self, *args):
         upLoads = args[0]
         sepHead = args[1]
+        ext = args[2].lower()
         dictUpLoads = {}
         nYes = 0
+        expVed = []
         for upLoad in upLoads:
+            if os.path.splitext(upLoad.name)[1] == f'.{ext}':
+                expVed.append(True)
+            else:
+                expVed.append(False)
             keyLoad = f'{upLoad.name}{sepHead}{upLoad.type}{sepHead}{upLoad.size}'
             if keyLoad in dictUpLoads:
                nYes += 1
@@ -80,7 +86,8 @@ class operatFiles():
             dictUpLoads[keyLoad].append(upLoad)
         nAll = len(upLoads)
         nNot = nAll - nYes
-        return(nAll, nYes, dictUpLoads)
+        fileVed = all(expVed)
+        return(nAll, nYes, dictUpLoads, fileVed)
         
     @st.cache_data
     def operatOthertoOther(_self, *args):
@@ -343,6 +350,10 @@ class main():
                     st.session_state[key] = False
                 else:
                     st.session_state[key] = 0
+        self.sldInpt = ['sld', 'inpt']
+        for k, key in enumerate(self.sldInpt): 
+            if key not in st.session_state:
+                st.session_state[key] = True
         self.objAcess = acessories(None)
         self.exts = ['BMP', 'GIF', 'ICO', 'JPEG', 'JPG', 'PDF', 'PNG', 
                      'PPM', 'TIF', 'TIFF']
@@ -380,9 +391,6 @@ class main():
                         st.session_state[self.keys[0]] = True
                         helpStr = 'Não há formatos de imagem selecionados para pesquisa.'
                     else:
-                        if self.options == [self.exts[5]]: 
-                            st.session_state[self.keys[2]] = self.valMin
-                            st.session_state[self.keys[3]] = self.valMin
                         st.session_state[self.keys[0]] = False 
                         self.optStr, self.nOpt = self.objAcess.returnStr(self.options)
                         helpStr = (f'Selecione ou arraste arquivos com qualquer um deste(s) '
@@ -400,40 +408,56 @@ class main():
                         st.session_state[self.keys[1]] = True
                         st.session_state[self.keys[2]] = self.valMin
                         st.session_state[self.keys[3]] = self.valMin
+                        st.session_state[self.sldInpt[0]] = True
+                        st.session_state[self.sldInpt[1]] = True
                         st.session_state['clicked'] = None
                         self.allUpLoads = {}
                         self.nAll = 0 
                         self.nRep = 0
                     else:
                         st.session_state[self.keys[1]] = False 
-                        self.nAll, self.nRep, self.allUpLoads = self.objFiles.operatBasic(self.upDowns, self.sepHead)
+                        self.nAll, self.nRep, self.allUpLoads, self.fileVed = self.objFiles.operatBasic(self.upDowns, self.sepHead, self.extsUni[4])
+                        if self.fileVed:
+                            st.session_state[self.keys[2]] = self.valMin
+                            st.session_state[self.keys[3]] = self.valMin
+                            st.session_state[self.sldInpt[0]] = True
+                            st.session_state[self.sldInpt[1]] = True
+                        else:
+                            st.session_state[self.sldInpt[0]] = False
+                            st.session_state[self.sldInpt[1]] = False
                     confUp = self.objAcess.returnUpload()
                     st.markdown(confUp, unsafe_allow_html=True)
             with colButton:
-                if self.options == [self.exts[5]]:
-                    cpl = f'Sendo exclusivo o formato {self.exts[5]}, a resolução, mesmo alterada, voltará ao mínimo e não será aplicada.'
-                elif self.exts[5] in self.options:
-                    cpl = f'A resolução não valerá para o formato {self.exts[5]}.'
-                else:
-                    cpl = ''
+                cpl = f'A resolução não se aplica a arquivos :blue[**{self.exts[5].lower()}**].'
                 st.markdown(self.labels[2], width='stretch', text_alignment='center', 
                             help='Deslize o cursor para a direita ➡️ (aumento) e para a esquerda ⬅️ (diminuição).\n'
                                  'Para entrada numérica, digite a resolução (apertando "enter" depois) ou aumente (➕)/ diminua (➖) \n'
                                  f'o valor desejado. O controle deslizante e o controle numérico se afetam reciprocamente. {cpl}')
-                                
                 colSlider, colResol = st.columns(spec=[13, 3.7], width='stretch', vertical_alignment='center')
                 self.slider = colSlider.slider(label=self.labels[2], min_value=self.valMin, max_value=self.valMax,
                                                step=self.step, key=self.keys[2], label_visibility='collapsed', 
-                                               disabled=st.session_state.statusButt, on_change=self.changeVal, 
+                                               disabled=st.session_state[self.sldInpt[0]], on_change=self.changeVal, 
                                                args=(0,), width='stretch')
                 self.resol = colResol.number_input(label=self.labels[2], min_value=self.valMin, max_value=self.valMax,
                                                    step=self.step, key=self.keys[3], label_visibility='collapsed',
-                                                   disabled=st.session_state.statusButt, on_change=self.changeVal, 
+                                                   disabled=st.session_state[self.sldInpt[1]], on_change=self.changeVal, 
                                                    args=(1,), format='%d', placeholder='0', width='stretch')
                 self.defineParameters()
                 self.optStr, self.nOpt = self.objAcess.returnStr(self.exts)
+                self.buttHelp = [0, 1, 2, 8, 9]
+                try:
+                    if self.fileVed:
+                        cplStr = ', '.join([self.exts[n] for n in self.buttHelp])
+                        helpCpl = f'(Desabilitados os botões {cplStr}).'
+                    else:
+                        if st.session_state[self.keys[1]]: 
+                            helpCpl = '(Todos os botões estão desabilitados).'
+                        else:
+                            helpCpl = '.'
+                except:
+                    helpCpl = '(Todos os botões estão desabilitados).'
                 helpStr = (f'A conversão será feita acionando o botão correspondente a um dos {self.nOpt} formato(s):\n '
-                           f':blue[***{self.optStr}***].')
+                           f':blue[***{self.optStr}***] {helpCpl}')
                 st.markdown(self.labels[3], width='stretch', text_alignment='center', 
                             help=helpStr)
                 self.colOne, self.colTwo, self.colThree, self.colFour, self.colFive = st.columns(spec=5, width='stretch', vertical_alignment='top')
@@ -465,14 +489,28 @@ class main():
             self.listButt = [self.buttSix, self.buttSeven, self.buttEight, self.buttNine, self.buttTen]
             cont = list(range(nCols, 2*nCols))
         self.butts = []
+        buttVed = []
+        try:
+            if self.fileVed:
+                buttVed = [0, 1, 2, 8, 9]                        
+        except:
+            pass
         for b, butt in enumerate(self.listButt):
             col = self.listCol[b]
             c = cont[b]
+            if c in buttVed:
+                disabButt = True
+            else:
+                disabButt = st.session_state[self.keys[1]]
+            if c in self.buttHelp:
+                cplHelp = f' (É desabilitado quando só houver arquivos :blue[**{self.exts[5].lower()}**] selecionados.)'
+            else:
+                cplHelp = ''
             butt = col.button(label=self.buttons[c][0], key=self.buttons[c][1], 
-                              icon=self.buttons[c][2], help=self.buttons[c][3],
+                              icon=self.buttons[c][2], help=self.buttons[c][3] + cplHelp,
                               use_container_width=self.buttons[c][4], on_click=self.clickButton, 
                               args=(c,), 
-                              disabled=st.session_state.statusButt)
+                              disabled=disabButt)
             self.butts.append(butt)
     
     def clickButton(self, buttId):
