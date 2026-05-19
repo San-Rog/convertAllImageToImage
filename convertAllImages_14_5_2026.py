@@ -291,7 +291,10 @@ class acessories():
                 else:
                     heads[keys[s+3]].append('sem repetição')
         else:
+            #1, self.exts, 5, cplStr
             exts = args[1]
+            numExt = args[2]
+            cplExt = args[3]
             heads = {'formato': exts, 
                      'informações': 
                          ['https://en.wikipedia.org/wiki/BMP_file_format', 
@@ -307,10 +310,12 @@ class acessories():
                     'seleção': 
                         ['✅' for w in range(10)], 
                     'conversão': 
-                        ['✅' for w in range(10)]
+                        ['✅' for w in range(10)], 
+                    'formato vedado': 
+                        ['➖' for w in range(10)]
                     }
             keys = list(heads.keys())
-            heads[keys[-1]][5] += ' (resolução imutável)'
+            heads[keys[-1]][numExt] = cplExt
         matrix = pd.DataFrame(heads, index=None)
         return(matrix, keys)
     
@@ -541,7 +546,8 @@ class main():
                                              use_container_width=True, icon=self.symbols[-1], 
                                              disabled=st.session_state[self.keys[-1]])            
         with self.buttInfo:
-            matrix, keys = self.objAcess.makeTables(1, self.exts)
+            cplStr = '  │  '.join([f'🚫 {self.exts[n]}' for n in self.buttHelp])            
+            matrix, keys = self.objAcess.makeTables(1, self.exts, 5, cplStr)
             st.markdown('📱 :red[**Detalhes sobre os formatos**]', width='stretch', text_alignment='center', 
                         help='Exibe links e detalhes sobre os formatos.')
             df = pd.DataFrame(matrix)
@@ -550,13 +556,14 @@ class main():
                     keys[1]: st.column_config.LinkColumn(
                                     label="link de acesso", 
                                     help="Clique para abrir o site com esclarecimentos sobre o formato.",
-                                    )
+                                    ), 
+                    keys[-1]: st.column_config.Column(width='large')
                 },
                 width='stretch' , hide_index=True)
             if len(self.allUpLoads) > 0:
                 st.markdown('💻 :red[**Detalhes sobre a seleção de arquivos**]', width='stretch', text_alignment='center', 
                             help='Exibe detalhes dos arquivos selecionados.')
-                matrix, keys = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead)
+                matrix, keys = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead, cplStr)
                 df = pd.DataFrame(matrix)
                 st.dataframe(df, 
                     column_config={
