@@ -624,5 +624,4 @@ class main():
         st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
 if __name__ == '__main__':
-    st.write(st.context.cookies)
     main()
