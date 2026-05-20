@@ -70,15 +70,9 @@ class operatFiles():
     def operatBasic(_self, *args):
         upLoads = args[0]
         sepHead = args[1]
-        ext = args[2].lower()
         dictUpLoads = {}
         nYes = 0
-        expVed = []
         for upLoad in upLoads:
-            if os.path.splitext(upLoad.name)[1] == f'.{ext}':
-                expVed.append(True)
-            else:
-                expVed.append(False)
             keyLoad = f'{upLoad.name}{sepHead}{upLoad.type}{sepHead}{upLoad.size}'
             if keyLoad in dictUpLoads:
                nYes += 1
@@ -86,8 +80,7 @@ class operatFiles():
             dictUpLoads[keyLoad].append(upLoad)
         nAll = len(upLoads)
         nNot = nAll - nYes
-        fileVed = all(expVed)
-        return(nAll, nYes, dictUpLoads, fileVed)
+        return(nAll, nYes, dictUpLoads)
         
     @st.cache_data
     def operatOthertoOther(_self, *args):
@@ -95,7 +88,7 @@ class operatFiles():
         sepHead = args[1]
         ext = args[2].lower()
         resol = args[3]
-        extsUni = args[4]
+        exts = args[4]
         zipBuffer = io.BytesIO()
         keysnOk = ['ok', 'nok']
         statusFileZip = {keysnOk[0]: [], keysnOk[1]:[]}
@@ -106,38 +99,23 @@ class operatFiles():
                     upName, upExt = os.path.splitext(upNameExt)
                     upExt = upExt.lower().replace('.', '').strip()
                     upName = f'{upName}_{upExt}_to_{ext}_{resol}_dpi'
-                    extPdf = extsUni[4].lower()
+                    extPdf = exts[5].lower()
                     if upExt == extPdf:
-                        if ext == extPdf:
-                            try:
-                                upName = f'{upName}_{upExt}_to_{ext}'
-                                imgFileBytes = _self.operatPdfToPdf(upLoad, ext, upName)
-                                for imgFile in imgFileBytes:
-                                    imgNew = imgFile[0]
-                                    imgBytes = imgFile[1]
-                                    if imgBytes is not None:
-                                        zipFile.writestr(imgNew, imgBytes)
-                                        statusFileZip[keysnOk[0]].append(upNameExt)
-                                    else:
-                                        statusFileZip[keysnOk[1]].append(upNameExt)
-                            except:
-                                statusFileZip[keysnOk[1]].append(upNameExt)
-                        if ext != extPdf:
-                            try:
-                                imgFileBytes = _self.operatPdfToOther(upLoad, ext, upName, resol)
-                                for imgFile in imgFileBytes:
-                                    imgNew = imgFile[0]
-                                    imgBytes = imgFile[1]
-                                    if imgBytes is not None:
-                                        zipFile.writestr(imgNew, imgBytes)
-                                        statusFileZip[keysnOk[0]].append(upNameExt)
-                                    else:
-                                        statusFileZip[keysnOk[1]].append(upNameExt)
-                            except:
-                                statusFileZip[keysnOk[1]].append(upNameExt)
+                        try:
+                            imgFileBytes = _self.operatPdfToOther(upLoad, ext, resol, upName, exts)
+                            for imgFile in imgFileBytes:
+                                imgNew = imgFile[0]
+                                imgBytes = imgFile[1]
+                                if imgBytes is not None:
+                                    zipFile.writestr(imgNew, imgBytes)
+                                    statusFileZip[keysnOk[0]].append(upNameExt)
+                                else:
+                                    statusFileZip[keysnOk[1]].append(upNameExt)
+                        except:
+                            statusFileZip[keysnOk[1]].append(upNameExt)
                     else:
                         try:
-                            imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName)
+                            imgNew, imgBytes = _self.operatNoPdfToOther(upLoad, ext, resol, upName, exts)
                             zipFile.writestr(imgNew, imgBytes.getvalue())
                             statusFileZip[keysnOk[0]].append(upNameExt)
                         except:
@@ -152,67 +130,56 @@ class operatFiles():
         ext = args[1]
         resol = args[2]
         upName = args[3]
-        img = Image.open(upLoad)
-        imgBytes = io.BytesIO()
-        if ext == 'tif':
-            extConv = 'tiff'
-        elif ext == 'jpg':
-            extConv = 'jpeg'
+        exts = args[4]
+        extConv = _self.resultExt(ext, exts)
+        if extConv in [exts[3].lower(), exts[7].lower()]:
+            img = Image.open(upLoad)
+            img = img.convert("RGB")
         else:
-            extConv = ext
+            img = Image.open(upLoad)
+        imgBytes = io.BytesIO()
         img.save(imgBytes, format=extConv, dpi=(resol, resol))
         imgNew = f'{upName}.{ext}'
         return(imgNew, imgBytes)
         
     @st.cache_data
-    def operatPdfToPdf(_self, *args):
-        upLoad = args[0]
-        ext = args[1]
-        upName = args[2]
-        pdfReader = PdfReader(upLoad)
-        allPages = len(pdfReader.pages)
-        pdfWriter = PdfWriter()
-        imgFileBytes = []
-        for numPg in range(allPages):
-            imgNew = f'{upName}_pg_{numPg + 1}.{ext}'
-            try:
-                pdfWriter.add_page(pdfReader.pages[numPg - 1])
-                output_pdf = io.BytesIO()
-                pdfWriter.write(output_pdf)
-                imgBytes=output_pdf.getvalue()
-                imgFileBytes.append([imgNew, imgBytes])
-            except:
-                imgFileBytes.append([imgNew, None])
-        return imgFileBytes
-        
-    @st.cache_data
     def operatPdfToOther(_self, *args):
         upLoad = args[0]
         ext = args[1]
-        upName = args[2]
-        resol = args[3]
+        resol = args[2]
+        upName = args[3]
+        extConv = _self.resultExt(ext, args[4])
         pdfBytes = upLoad.read()
-        doc = pymupdf.open(stream=pdfBytes, filetype="pdf")
+        doc = pymupdf.open(stream=pdfBytes, filetype=ext)
         imgFileBytes = []
-        if ext == 'tif':
-            extConv = 'tiff'
-        elif ext == 'jpg':
-            extConv = 'jpeg'
-        else:
-            extConv = ext
         for i, page in enumerate(doc):
             imgNew = f'{upName}_pg_{i + 1}.{ext}'
             try:
-                pix = page.get_pixmap()
-                img = Image.open(io.BytesIO(pix.tobytes(extConv)))
+                zoom = resol/72
+                mat = pymupdf.Matrix(zoom, zoom)
+                pix = page.get_pixmap(matrix=mat)
+                img = Image.open(io.BytesIO(pix.tobytes()))
                 img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format=extConv, dpi=(resol, resol))
+                img.save(img_byte_arr, format=extConv)
                 imgBytes = img_byte_arr.getvalue()
                 imgFileBytes.append([imgNew, imgBytes])
             except:
                 imgFileBytes.append([imgNew, None])
         doc.close()
         return imgFileBytes
+        
+    @st.cache_data
+    def resultExt(_self, *args):
+        ext = args[0]
+        extOrig = args[1]
+        exts = [ex.lower() for ex in extOrig]
+        if ext == exts[-2]:
+            extConv = exts[-1]
+        elif ext == exts[4]:
+            extConv = exts[3]
+        else:
+            extConv = ext 
+        return extConv
                                    
 class acessories():
     def __init__(self, *args):
@@ -260,11 +227,11 @@ class acessories():
                 nOpt += 1
         match nOpt:
             case 0:
-                txtInfo = f'{iconNeg} {exprOpt} {exprSel} ({nOpt})'
+                txtInfo = f'{iconNeg} {exprOpt} {exprSel} (:orange[{nOpt}])'
             case 1:
-                txtInfo = f'{iconPos} {exprOpt} {exprSel} ({nOpt})'
+                txtInfo = f'{iconPos} {exprOpt} {exprSel} (:orange[{nOpt}])'
             case _:
-                txtInfo = f'{iconPos} {exprOpt}s {exprSel}s ({nOpt})'
+                txtInfo = f'{iconPos} {exprOpt}s {exprSel}s (:orange[{nOpt}])'
         return txtInfo
     
     @st.cache_data    
@@ -291,10 +258,7 @@ class acessories():
                 else:
                     heads[keys[s+3]].append('sem repetição')
         else:
-            #1, self.exts, 5, cplStr
             exts = args[1]
-            numExt = args[2]
-            cplExt = args[3]
             heads = {'formato': exts, 
                      'informações': 
                          ['https://en.wikipedia.org/wiki/BMP_file_format', 
@@ -310,12 +274,9 @@ class acessories():
                     'seleção': 
                         ['✅' for w in range(10)], 
                     'conversão': 
-                        ['✅' for w in range(10)], 
-                    'formato vedado': 
-                        ['➖' for w in range(10)]
+                        ['✅' for w in range(10)]
                     }
             keys = list(heads.keys())
-            heads[keys[-1]][numExt] = cplExt
         matrix = pd.DataFrame(heads, index=None)
         return(matrix, keys)
     
@@ -355,10 +316,6 @@ class main():
                     st.session_state[key] = False
                 else:
                     st.session_state[key] = 0
-        self.sldInpt = ['sld', 'inpt']
-        for k, key in enumerate(self.sldInpt): 
-            if key not in st.session_state:
-                st.session_state[key] = True
         self.objAcess = acessories(None)
         self.exts = ['BMP', 'GIF', 'ICO', 'JPEG', 'JPG', 'PDF', 'PNG', 
                      'PPM', 'TIF', 'TIFF']
@@ -413,56 +370,40 @@ class main():
                         st.session_state[self.keys[1]] = True
                         st.session_state[self.keys[2]] = self.valMin
                         st.session_state[self.keys[3]] = self.valMin
-                        st.session_state[self.sldInpt[0]] = True
-                        st.session_state[self.sldInpt[1]] = True
                         st.session_state['clicked'] = None
                         self.allUpLoads = {}
                         self.nAll = 0 
                         self.nRep = 0
                     else:
                         st.session_state[self.keys[1]] = False 
-                        self.nAll, self.nRep, self.allUpLoads, self.fileVed = self.objFiles.operatBasic(self.upDowns, self.sepHead, self.extsUni[4])
-                        if self.fileVed:
-                            st.session_state[self.keys[2]] = self.valMin
-                            st.session_state[self.keys[3]] = self.valMin
-                            st.session_state[self.sldInpt[0]] = True
-                            st.session_state[self.sldInpt[1]] = True
-                        else:
-                            st.session_state[self.sldInpt[0]] = False
-                            st.session_state[self.sldInpt[1]] = False
+                        self.nAll, self.nRep, self.allUpLoads = self.objFiles.operatBasic(self.upDowns, self.sepHead)
                     confUp = self.objAcess.returnUpload()
                     st.markdown(confUp, unsafe_allow_html=True)
             with colButton:
-                cpl = f'A resolução não se aplica a arquivos :blue[**{self.exts[5].lower()}**].'
+                if self.options == [self.exts[5]]:
+                    cpl = f'Sendo exclusivo o formato {self.exts[5]}, a resolução, mesmo alterada, voltará ao mínimo e não será aplicada.'
+                elif self.exts[5] in self.options:
+                    cpl = f'A resolução não valerá para o formato {self.exts[5]}.'
+                else:
+                    cpl = ''
                 st.markdown(self.labels[2], width='stretch', text_alignment='center', 
                             help='Deslize o cursor para a direita ➡️ (aumento) e para a esquerda ⬅️ (diminuição).\n'
                                  'Para entrada numérica, digite a resolução (apertando "enter" depois) ou aumente (➕)/ diminua (➖) \n'
                                  f'o valor desejado. O controle deslizante e o controle numérico se afetam reciprocamente. {cpl}')
+                                
                 colSlider, colResol = st.columns(spec=[13, 3.7], width='stretch', vertical_alignment='center')
                 self.slider = colSlider.slider(label=self.labels[2], min_value=self.valMin, max_value=self.valMax,
                                                step=self.step, key=self.keys[2], label_visibility='collapsed', 
-                                               disabled=st.session_state[self.sldInpt[0]], on_change=self.changeVal, 
+                                               disabled=st.session_state[self.keys[1]], on_change=self.changeVal, 
                                                args=(0,), width='stretch')
                 self.resol = colResol.number_input(label=self.labels[2], min_value=self.valMin, max_value=self.valMax,
                                                    step=self.step, key=self.keys[3], label_visibility='collapsed',
-                                                   disabled=st.session_state[self.sldInpt[1]], on_change=self.changeVal, 
+                                                   disabled=st.session_state[self.keys[1]], on_change=self.changeVal, 
                                                    args=(1,), format='%d', placeholder='0', width='stretch')
                 self.defineParameters()
                 self.optStr, self.nOpt = self.objAcess.returnStr(self.exts)
-                self.buttHelp = [0, 1, 2, 8, 9]
-                try:
-                    if self.fileVed:
-                        cplStr = ', '.join([self.exts[n] for n in self.buttHelp])
-                        helpCpl = f'(Desabilitados os botões {cplStr}).'
-                    else:
-                        if st.session_state[self.keys[1]]: 
-                            helpCpl = '(Todos os botões estão desabilitados).'
-                        else:
-                            helpCpl = '.'
-                except:
-                    helpCpl = '(Todos os botões estão desabilitados).'
                 helpStr = (f'A conversão será feita acionando o botão correspondente a um dos {self.nOpt} formato(s):\n '
-                           f':blue[***{self.optStr}***] {helpCpl}')
+                           f':blue[***{self.optStr}***].')
                 st.markdown(self.labels[3], width='stretch', text_alignment='center', 
                             help=helpStr)
                 self.colOne, self.colTwo, self.colThree, self.colFour, self.colFive = st.columns(spec=5, width='stretch', vertical_alignment='top')
@@ -494,28 +435,14 @@ class main():
             self.listButt = [self.buttSix, self.buttSeven, self.buttEight, self.buttNine, self.buttTen]
             cont = list(range(nCols, 2*nCols))
         self.butts = []
-        buttVed = []
-        try:
-            if self.fileVed:
-                buttVed = [0, 1, 2, 8, 9]                        
-        except:
-            pass
         for b, butt in enumerate(self.listButt):
             col = self.listCol[b]
             c = cont[b]
-            if c in buttVed:
-                disabButt = True
-            else:
-                disabButt = st.session_state[self.keys[1]]
-            if c in self.buttHelp:
-                cplHelp = f' (É desabilitado quando só houver arquivos :blue[**{self.exts[5].lower()}**] selecionados.)'
-            else:
-                cplHelp = ''
             butt = col.button(label=self.buttons[c][0], key=self.buttons[c][1], 
-                              icon=self.buttons[c][2], help=self.buttons[c][3] + cplHelp,
+                              icon=self.buttons[c][2], help=self.buttons[c][3],
                               use_container_width=self.buttons[c][4], on_click=self.clickButton, 
                               args=(c,), 
-                              disabled=disabButt)
+                              disabled=st.session_state[self.keys[1]])
             self.butts.append(butt)
     
     def clickButton(self, buttId):
@@ -528,11 +455,11 @@ class main():
         self.negative = '❌'
         txtFormat = self.objAcess.returnInfo(self.options, self.positive, self.negative, 'formato', 'escolhido', 0, self.extsUni)
         txtFile = f'{self.objAcess.returnInfo(self.upDowns, self.positive, self.negative, 'arquivo', 'selecionado', 1, self.extsUni)}'
-        txtResol = f'{self.positive} resolução ({str(st.session_state[self.keys[2]])}dpi)'
+        txtResol = f'{self.positive} resolução (:orange[{str(st.session_state[self.keys[2]])}dpi])'
         if st.session_state['clicked'] is None:
-            txtOpt = f'{self.negative} nenhuma opção clicada'
+            txtOpt = f'{self.negative} :orange[nenhuma] opção clicada'
         else:
-            txtOpt = f'{self.positive} {st.session_state['clicked']} clicada'
+            txtOpt = f'{self.positive} :orange[{st.session_state['clicked']}] clicada (última)'
         with self.colConfig:
             colFormatSel, colFileSel, colResolSel, colOptSel = st.columns(spec=4, vertical_alignment='center', 
                                                                           width='stretch')
@@ -546,8 +473,7 @@ class main():
                                              use_container_width=True, icon=self.symbols[-1], 
                                              disabled=st.session_state[self.keys[-1]])            
         with self.buttInfo:
-            cplStr = '  │  '.join([f'🚫 {self.exts[n]}' for n in self.buttHelp])            
-            matrix, keys = self.objAcess.makeTables(1, self.exts, 5, cplStr)
+            matrix, keys = self.objAcess.makeTables(1, self.exts)
             st.markdown('📱 :red[**Detalhes sobre os formatos**]', width='stretch', text_alignment='center', 
                         help='Exibe links e detalhes sobre os formatos.')
             df = pd.DataFrame(matrix)
@@ -556,14 +482,13 @@ class main():
                     keys[1]: st.column_config.LinkColumn(
                                     label="link de acesso", 
                                     help="Clique para abrir o site com esclarecimentos sobre o formato.",
-                                    ), 
-                    keys[-1]: st.column_config.Column(width='large')
+                                    )
                 },
                 width='stretch' , hide_index=True)
             if len(self.allUpLoads) > 0:
                 st.markdown('💻 :red[**Detalhes sobre a seleção de arquivos**]', width='stretch', text_alignment='center', 
                             help='Exibe detalhes dos arquivos selecionados.')
-                matrix, keys = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead, cplStr)
+                matrix, keys = self.objAcess.makeTables(0, self.allUpLoads, self.sepHead)
                 df = pd.DataFrame(matrix)
                 st.dataframe(df, 
                     column_config={
@@ -586,7 +511,7 @@ class main():
         if buttClick is not None:
             buttClick = buttClick.replace(self.oprExpr, '').strip()
             textSp = 'Convertendo arquivo(s) para o formato {buttClick} com resolução de {self.resol}dpi...'
-            dataFiles, fileFails = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol, self.extsUni)  
+            dataFiles, fileFails = self.objFiles.operatOthertoOther(self.allUpLoads, self.sepHead, buttClick, self.resol, self.exts)  
             keyF = list(fileFails.keys()) 
             oks = fileFails[keyF[0]]
             noks = fileFails[keyF[1]]
